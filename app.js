@@ -51,13 +51,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve HTML files from the "public" folder
-// So visiting / opens index.html automatically
-app.use(express.static("public"));
-
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");
-});
+// HTML files are served directly by Vercel from the /public folder.
+// Express here only handles /api/... routes.
 
 // ─── Read secrets from environment variables ───
 const MONGODB_URI = process.env.MONGODB_URI;
