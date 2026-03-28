@@ -150,6 +150,45 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 
+// POST /api/auth/register
+// Body: { email, password }
+// Returns: { token, role }  (auto-logs in after signup)
+app.post("/api/auth/register", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password || password.length < 6) {
+    return res.status(400).json({ error: "Valid email and 6+ char password required." });
+  }
+
+  // Check if email already taken
+  const existing = await User.findOne({ email: email.toLowerCase() });
+  if (existing) {
+    return res.status(400).json({ error: "That email is already registered." });
+  }
+
+  // Hash the password before saving — never store plain text
+  const hashed = await bcrypt.hash(password, 10);
+
+  const newUser = new User({
+    email:    email.toLowerCase(),
+    password: hashed,
+    balance:  0,
+    role:     "user",   // all self-registered users are regular users
+  });
+
+  await newUser.save();
+
+  // Auto-login: issue a token right away so the frontend can redirect immediately
+  const token = jwt.sign(
+    { id: newUser._id, role: newUser.role },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.status(201).json({ token, role: newUser.role });
+});
+
+
 // ============================================================
 //  USER ROUTES  –  /api/user/...
 //  All routes below require a valid token (requireAuth)
